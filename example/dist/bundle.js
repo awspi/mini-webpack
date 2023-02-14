@@ -1,67 +1,63 @@
 (function (modules) {
-  function require(id) {
-    let module = { exports: {} };
+function require(id) {
 
-    // TODO 如何通过 filename 找到对应的函数呢？
-    // key filename  -> fn
-    // 1. 需要通过 filename 找到对应的模块函数
-    const [fn,mapping] = modules[id];
+const [fn,mapping] = modules[id];
 
-    function localRequire(filename){
-      const id = mapping[filename]
-      return require(id)
-    }
+function localRequire(name){
+// name -> id
+return require(mapping[name])
+}
 
-    fn(localRequire, module, module.exports);
+const module = { exports: {} };
+fn(localRequire, module, module.exports);
+return module.exports;
+}
 
-    return module.exports;
-  }
 
-  require(1)
+require(0);
 })({
-   
-  1 : [function (require, module, exports) {
+
+  0 : [
+    function (require, module, exports){
     "use strict";
 
 var _foo = require("./foo.js");
-
-var _doc = require("./doc.md");
-
-var _doc2 = _interopRequireDefault(_doc);
-
+var _user = require("./user.json");
+var _user2 = _interopRequireDefault(_user);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
+(0, _foo.foo)();
+console.log(_user2.default);
 console.log("main");
-console.log(_doc2.default);
-(0, _foo.foo)(); 
-  }, 
-    {"./foo.js":2,"./doc.md":3} 
-  ],
-   
-  2 : [function (require, module, exports) {
+      },
+      {"./foo.js":1,"./user.json":2}
+        ],
+        
+  1 : [
+    function (require, module, exports){
     "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.foo = foo;
-
 function foo() {
   console.log("foo");
-} 
-  }, 
-    {} 
-  ],
-   
-  3 : [function (require, module, exports) {
+}
+      },
+      {}
+        ],
+        
+  2 : [
+    function (require, module, exports){
     "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = 'this is a doc'; 
-  }, 
-    {} 
-  ],
-   
-});
+exports.default = "{\n  \"name\":\"pithy\",\n  \"year\":2023\n}\n";
+      },
+      {}
+        ],
+        
+          }
+          );
