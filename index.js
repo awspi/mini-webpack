@@ -4,7 +4,9 @@ import ejs from 'ejs'
 import parser from '@babel/parser'
 import traverse from '@babel/traverse'
 import { transformFromAst } from 'babel-core'
+import { SyncHook } from "tapable"
 import { jsonLoader } from './loader/json-loader.js'
+import { changeOutputPath } from './plugin/change-output-path.js'
 
 let id = 0
 
@@ -15,7 +17,12 @@ const webpackConfig = {
       test: /\.json$/,
       use: [jsonLoader]// 数组or单个函数
     }]
-  }
+  },
+  plugins: [new changeOutputPath()]
+}
+
+const hooks = {
+  emitFile: new SyncHook(['context'])
 }
 
 function createAsset(filePath) {
@@ -63,6 +70,12 @@ function createAsset(filePath) {
   }
 }
 
+function initPlugins() {
+  const plugins = webpackConfig.plugins
+  plugins.forEach(plugin => plugin.apply(hooks))
+}
+initPlugins()
+
 function createGraph() {
   const mainAsset = createAsset('./example/main.js')
   // 遍历图 BFS
@@ -85,7 +98,15 @@ function build(graph) {
   const data = graph.map(({ id, code, mapping }) => ({ id, code, mapping }))
   console.log(data);
   const code = ejs.render(template, { data })
-  fs.writeFileSync('./dist/bundle.js', code)
+  let outputPath = './dist/bundle.js'
+
+  const context = {
+    changeOutputPath(path) {
+      outputPath = path
+    }
+  }
+  hooks.emitFile.call(context)
+  fs.writeFileSync(outputPath, code)
 
 }
 
