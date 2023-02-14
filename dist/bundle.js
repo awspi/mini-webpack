@@ -21,12 +21,16 @@ require(0)
 
 var _foo = require("./foo.js");
 
-// import doc from "./doc.md";
-// import bar from './bar/index.js'
-console.log("main"); // console.log(doc);
+var _user = require("./user.json");
 
+var _user2 = _interopRequireDefault(_user);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+console.log("main");
+console.log(_user2.default);
 (0, _foo.foo)();
-      },{"./foo.js":1}],
+      },{"./foo.js":1,"./user.json":2}],
         
   1: [function (require, module, exports) {
     "use strict";
@@ -39,6 +43,15 @@ exports.foo = foo;
 function foo() {
   console.log("foo");
 }
+      },{}],
+        
+  2: [function (require, module, exports) {
+    "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = "{\n  \"name\":\"pithy\",\n  \"year\":2023\n}\n";
       },{}],
         
           })

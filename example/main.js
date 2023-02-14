@@ -1,7 +1,6 @@
 import { foo } from "./foo.js";
-// import doc from "./doc.md";
-// import bar from './bar/index.js'
+import json from "./user.json";
 
 console.log("main");
-// console.log(doc);
+console.log(json);
 foo();

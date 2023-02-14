@@ -4,14 +4,43 @@ import ejs from 'ejs'
 import parser from '@babel/parser'
 import traverse from '@babel/traverse'
 import { transformFromAst } from 'babel-core'
+import { jsonLoader } from './loader/json-loader.js'
 
 let id = 0
 
+const webpackConfig = {
+  entry: "./example/main.js",
+  module: {
+    rules: [{
+      test: /\.json$/,
+      use: [jsonLoader]// 数组or单个函数
+    }]
+  }
+}
+
 function createAsset(filePath) {
   //? 1. 获取文件内容
-  const source = fs.readFileSync(filePath, {
+  let source = fs.readFileSync(filePath, {
     encoding: 'utf-8'
   })
+
+  //! initLoader
+  const loaders = webpackConfig.module.rules
+  const loaderContext = {
+    addDeps(dep) {
+      console.log('addDeps', dep);
+    }
+  }
+
+  loaders.forEach(({ test, use }) => {
+    //满足正则 就执行use函数(对应的loader) 返回处理好的source 并替换原source
+    if (test.test(filePath)) {
+      Array.isArray(use)
+        ? use.reverse().forEach(fn => source = fn.call(loaderContext, source))//'use' 倒序执行
+        : source = use.call(loaderContext, source)
+    }
+  })
+
   //? 2. 获取依赖关系 --AST 使用babel 
   const ast = parser.parse(source, { sourceType: "module" })
   const deps = [] // 依赖关系
@@ -65,19 +94,9 @@ build(graph)
 
 //! 
 
-// const mdLoader = function () {
 
-// }
 
-// const webpackConfig = {
-//   entry: "./example/main.js",
-//   module: {
-//     rule: [{
-//       test: /\.md$/,
-//       use: mdLoader
-//     }]
-//   }
-// }
+
 
 // function webpack(config) {
 //   globalConfig = config
