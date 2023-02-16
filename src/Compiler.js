@@ -1,0 +1,78 @@
+import fs from "fs";
+import path from "path";
+import Compilation from "./Compilation.js";
+import { AsyncSeriesHook, SyncHook } from "tapable";
+import { genBundleCode } from "./utils/genBundleCode.js";
+
+export class Compiler {
+  constructor(config) {
+    const { entry, output } = config;
+
+    this._entry = entry;
+    this._output = output;
+    this._config = config;
+    this._compilation = null;
+    this._plugins = config.plugins || [];
+    this._graph = [];
+
+    this.hooks = {
+      run: new SyncHook(),
+      emit: new AsyncSeriesHook(["compiler"]),
+    };
+
+    this.initPlugins();
+  }
+
+  initPlugins() {
+    // 调用所有的 plugin
+    this._plugins.forEach((plugin) => {
+      plugin.apply?.call(plugin, this);
+    });
+  }
+
+  run() {
+    // 1. buildModule
+    console.log("run");
+    this.hooks.run.call();
+    this._compilation = new Compilation({
+      loaders: this._config.module?.rules || [],
+      entry: this._entry,
+    });
+    this._compilation.make();// 构建
+    this.hooks.emit.callAsync(this, () => {
+      console.log("emit 处理完毕");
+    });
+    this.emitFiles();
+  }
+
+  emitFiles() {
+    // 可以把收集到的所有的 code 打包出去了
+    // 先加工一下 module 的 code
+    // 给包裹一个 function
+    // modules 需要是一个对象
+    //* Steps
+    // 获取模块代码的需要几个步骤
+    // 1. 每一个模块都有自己的唯一 id
+    // 2. 用户获取 require(./foo) 的时候，需要把 ./foo 映射为 id
+    // 3. 然后基于 id 去获取模块的代码
+
+    // 为什么不可以直接使用 filename 来作为key
+    // filename 如果是绝对路径的话，那么用户使用的时候可是相对路径的
+    // 而如果使用绝对路径的话， 那么就有可能有命名冲突的问题
+    // 所以使用 id 来存所有的模块，然后一个模块内有自己的 mapping ，这样的话 就保证了命名不会冲突
+    const graph = this._compilation.graph
+    const modules = graph.reduce((pre, curr) => {
+      // 需要拿到 mapping ，后面需要使用绝对路径来获取模块的 id
+      pre[curr.id] = {
+        code: curr.code,
+        mapping: curr.mapping,
+      };
+      return pre;
+    }, {});
+
+    // 最后基于 output 生成 bundle 文件即可
+    const outputPath = path.join(this._output.path, this._output.filename);
+
+    fs.writeFileSync(outputPath, genBundleCode({ modules }));
+  }
+}
